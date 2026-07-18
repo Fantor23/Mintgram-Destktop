@@ -1,0 +1,100 @@
+name: Build Mintgram Desktop
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Run Windows Prepare Script
+        run: |
+          ./Telegram/build/prepare/win.bat
+
+      - name: Configure CMake
+        run: |
+          cd Telegram
+          ./configure.bat x64 -D TDESKTOP_API_ID=2040 -D TDESKTOP_API_HASH=b18441a1ff607e10a989891a5462e627
+
+      - name: Build Windows Executable
+        run: |
+          cmake --build out --config Release --target Telegram
+
+      - name: Upload Windows Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: mintgram-windows-x64
+          path: out/Release/Telegram.exe
+
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential devscripts equivs libx11-dev libx11-xcb-dev libxext-dev libxrandr-dev libxkbcommon-dev libxkbcommon-x11-dev libxfixes-dev libxi-dev libxrender-dev libxcb1-dev libxcb-keysyms1-dev libxcb-image0-dev libxcb-shm0-dev libxcb-icccm4-dev libxcb-sync-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-randr0-dev libxcb-render-util0-dev libxcb-util-dev libxcb-xinerama0-dev libxcb-xkb-dev libxcb-cursor-dev libgl-dev libglu1-mesa-dev libegl1-mesa-dev libxkbcommon-dev libwayland-dev libwayland-egl1-mesa libwayland-client0 libwayland-cursor0
+
+      - name: Run Linux Prepare Script
+        run: |
+          ./Telegram/build/prepare/linux.sh
+
+      - name: Configure CMake
+        run: |
+          cd Telegram
+          ./configure.sh -D TDESKTOP_API_ID=2040 -D TDESKTOP_API_HASH=b18441a1ff607e10a989891a5462e627
+
+      - name: Build Linux Binary
+        run: |
+          cmake --build out --config Release --target Telegram
+
+      - name: Upload Linux Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: mintgram-linux-x64
+          path: out/Release/Telegram
+
+  build-mac:
+    runs-on: macos-13
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Run macOS Prepare Script
+        run: |
+          ./Telegram/build/prepare/mac.sh
+
+      - name: Configure CMake
+        run: |
+          cd Telegram
+          ./configure.sh -D TDESKTOP_API_ID=2040 -D TDESKTOP_API_HASH=b18441a1ff607e10a989891a5462e627
+
+      - name: Build macOS App
+        run: |
+          cmake --build out --config Release --target Telegram
+
+      - name: Upload macOS App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: mintgram-macos
+          path: out/Release/Telegram.app
